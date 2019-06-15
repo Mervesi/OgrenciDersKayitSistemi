@@ -30,7 +30,7 @@ namespace DersKayitWeb.Controllers
 
         public ActionResult Contact()
         {
-            ViewBag.Message = "Your contact page.";
+            ViewBag.Message = "İletişim sayfası.";
 
             return View();
         }

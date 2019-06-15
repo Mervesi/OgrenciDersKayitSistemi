@@ -15,7 +15,7 @@ namespace DersKayitWeb.Controllers
     public class StudentController : Controller
     {
         private SchoolContext db = new SchoolContext();
-
+        StudentDataAccess studentDataAccess = new StudentDataAccess();
         // GET: Student
         public ViewResult Index(string sortOrder, string currentFilter, string searchString, int? page)
         {
@@ -34,12 +34,13 @@ namespace DersKayitWeb.Controllers
 
             ViewBag.CurrentFilter = searchString;
 
-            var students = from s in db.Students
-                           select s;
+           
+            var students = studentDataAccess.GetStudent();
+            
+
             if (!String.IsNullOrEmpty(searchString))
             {
-                students = students.Where(s => s.LastName.Contains(searchString)
-                                       || s.FirstMidName.Contains(searchString));
+                students = studentDataAccess.GetStudentBySearchString(searchString);
             }
             switch (sortOrder)
             {
@@ -52,7 +53,7 @@ namespace DersKayitWeb.Controllers
                 case "date_desc":
                     students = students.OrderByDescending(s => s.EnrollmentDate);
                     break;
-                default:  // Name ascending 
+                default:  
                     students = students.OrderBy(s => s.LastName);
                     break;
             }
@@ -61,14 +62,14 @@ namespace DersKayitWeb.Controllers
             int pageNumber = (page ?? 1);
             return View(students.ToPagedList(pageNumber, pageSize));
         }
-        // GET: Student/Details/5
+     
         public ActionResult Details(int? id)
         {
             if (id == null)
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Student student = db.Students.Find(id);
+            Student student = studentDataAccess.FindStudentById((int)id);
             if (student == null)
             {
                 return HttpNotFound();
@@ -76,15 +77,11 @@ namespace DersKayitWeb.Controllers
             return View(student);
         }
 
-        // GET: Student/Create
+     
         public ActionResult Create()
         {
             return View();
         }
-
-        // POST: Student/Create
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see https://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Create([Bind(Include = "LastName,FirstMidName,EnrollmentDate")] Student student)
@@ -93,8 +90,7 @@ namespace DersKayitWeb.Controllers
             {
                 if (ModelState.IsValid)
                 {
-                    db.Students.Add(student);
-                    db.SaveChanges();
+                    studentDataAccess.AddStudent(student);
                     return RedirectToAction("Index");
                 }
             }
@@ -104,39 +100,30 @@ namespace DersKayitWeb.Controllers
             }
             return View(student);
         }
-
-        // GET: Student/Edit/5
         public ActionResult Edit(int? id)
         {
             if (id == null)
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Student student = db.Students.Find(id);
+            Student student = studentDataAccess.FindStudentById((int)id);
             if (student == null)
             {
                 return HttpNotFound();
             }
             return View(student);
         }
-
-        // POST: Student/Edit/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see https://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Edit([Bind(Include = "ID,LastName,FirstMidName,EnrollmentDate")] Student student)
         {
             if (ModelState.IsValid)
             {
-                db.Entry(student).State = EntityState.Modified;
-                db.SaveChanges();
+                studentDataAccess.EditStudent(student);
                 return RedirectToAction("Index");
             }
             return View(student);
         }
-
-        // GET: Student/Delete/5
         public ActionResult Delete(int? id, bool? saveChangesError = false)
         {
             if (id == null)
@@ -147,24 +134,20 @@ namespace DersKayitWeb.Controllers
             {
                 ViewBag.ErrorMessage = "Delete failed. Try again, and if the problem persists see your system administrator.";
             }
-            Student student = db.Students.Find(id);
+            Student student = studentDataAccess.FindStudentById((int)id);
             if (student == null)
             {
                 return HttpNotFound();
             }
             return View(student);
         }
-
-        // POST: Student/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
             try
             {
-                Student student = db.Students.Find(id);
-                db.Students.Remove(student);
-                db.SaveChanges();
+                studentDataAccess.DeleteStudent(id);
             }
             catch (DataException)
             {
@@ -172,7 +155,6 @@ namespace DersKayitWeb.Controllers
             }
             return RedirectToAction("Index");
         }
-
         protected override void Dispose(bool disposing)
         {
             if (disposing)
